@@ -7,7 +7,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -16,15 +15,12 @@ builder.Services.AddCors(options =>
     });
 });
 
-// DB
 builder.Services.AddDbContext<VendingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Services
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AuthService>();
 
-// JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -46,7 +42,6 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ⬇️ SWAGGER — ВСЕГДА, без условий
 app.UseSwagger();
 app.UseSwaggerUI();
 
