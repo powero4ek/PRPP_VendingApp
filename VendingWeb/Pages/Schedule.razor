@@ -1,0 +1,134 @@
+@page "/schedule"
+@inject ScheduleService ScheduleService
+@inject VendingDbContext Db
+
+<h3>График работ</h3>
+
+<div class="mb-3">
+    <button class="btn btn-success" @onclick="CreateRequest">Создать заявку</button>
+</div>
+
+@if (showCreate)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Новая заявка</h5>
+            <div class="mb-2">
+                <label>ТА:</label>
+                <select @bind="newRequest.MachineID" class="form-select">
+                    @foreach (var m in allMachines)
+                    {
+                        <option value="@m.MachineID">@m.Model</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>Тип:</label>
+                <select @bind="newRequest.RequestType" class="form-select">
+                    <option value="Плановое">Плановое</option>
+                    <option value="Авария">Авария</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>Дата:</label>
+                <InputDate @bind-Value="newRequest.ScheduledDate" class="form-control" />
+            </div>
+            <div class="mb-2">
+                <label>Описание:</label>
+                <textarea @bind="newRequest.Description" class="form-control"></textarea>
+            </div>
+            <button class="btn btn-primary" @onclick="SaveRequest">Сохранить</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-info">@message</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>ТА</th>
+            <th>Тип</th>
+            <th>Статус</th>
+            <th>Дата</th>
+            <th>Исполнитель</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in requests)
+        {
+            <tr>
+                <td>@r.RequestID</td>
+                <td>@(r.Machine?.Model ?? "-")</td>
+                <td>@r.RequestType</td>
+                <td>@r.Status</td>
+                <td>@(r.ScheduledDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                <td>@(r.User?.FullName ?? "Не назначен")</td>
+                <td>
+                    @if (r.Status == "Новая")
+                    {
+                        <select @bind="selectedUserId" class="form-select form-select-sm" style="width:150px;display:inline">
+                            <option value="">Выбрать</option>
+                            @foreach (var u in users)
+                            {
+                                <option value="@u.UserID">@u.FullName</option>
+                            }
+                        </select>
+                        <button class="btn btn-sm btn-primary" @onclick="() => Assign(r.RequestID)">Назначить</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<ServiceRequest> requests = new();
+    private List<Machine> allMachines = new();
+    private List<User> users = new();
+    private bool showCreate = false;
+    private ServiceRequest newRequest = new();
+    private int? selectedUserId;
+    private string message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        requests = await Db.ServiceRequests.Include(r => r.Machine).Include(r => r.User).OrderByDescending(r => r.CreatedAt).ToListAsync();
+        allMachines = await Db.Machines.ToListAsync();
+        users = await Db.Users.Where(u => u.Role == "Инженер" || u.Role == "Оператор").ToListAsync();
+    }
+
+    private void CreateRequest()
+    {
+        showCreate = true;
+        newRequest = new ServiceRequest { ScheduledDate = DateTime.Now.AddDays(1) };
+    }
+
+    private async Task SaveRequest()
+    {
+        newRequest.Status = "Новая";
+        newRequest.CreatedAt = DateTime.Now;
+        Db.ServiceRequests.Add(newRequest);
+        await Db.SaveChangesAsync();
+        showCreate = false;
+        await LoadData();
+    }
+
+    private async Task Assign(int requestId)
+    {
+        if (!selectedUserId.HasValue) return;
+        var result = await ScheduleService.AssignRequestAsync(requestId, selectedUserId.Value);
+        message = result.Success ? "Назначено успешно" : $"Ошибка: {result.Message}";
+        await LoadData();
+    }
+}

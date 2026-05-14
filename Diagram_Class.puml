@@ -1,0 +1,163 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+
+package "Models" {
+    class User {
+        +UserID: int
+        +FullName: string
+        +Email: string
+        +Phone: string
+        +Role: string
+        +PasswordHash: string
+        +PhotoUrl: string
+        +TabNumber: string
+        +CreatedAt: DateTime
+    }
+
+    class Machine {
+        +MachineID: int
+        +Location: string
+        +Model: string
+        +PaymentType: string
+        +FullIncome: decimal
+        +SerialNumber: string
+        +InventoryNumber: string
+        +Manufacturer: string
+        +ManufactureDate: DateTime
+        +DateOfCommissioning: DateTime
+        +LastVerificationDate: DateTime?
+        +VerificationInterval: int?
+        +ResourceHours: int?
+        +DateOfNextFixing: DateTime?
+        +MaintenanceTimeHours: int?
+        +MachineStatus: string
+        +Country: string
+        +InventoryDate: DateTime?
+        +DateAdded: DateTime
+    }
+
+    class Product {
+        +ProductID: int
+        +Name: string
+        +Description: string
+        +Price: decimal
+        +InStock: int
+        +MinStock: int
+        +PropensityToSell: decimal?
+    }
+
+    class Sale {
+        +SaleID: int
+        +MachineID: int
+        +ProductID: int
+        +Quantity: int
+        +SaleSum: decimal
+        +SaleDateTime: DateTime
+        +PaymentType: string
+    }
+
+    class Maintenance {
+        +NoteID: int
+        +MachineID: int
+        +MaintenanceDate: DateTime
+        +Description: string
+        +Problems: string
+        +DoneByUser: int?
+    }
+
+    class Company {
+        +CompanyID: int
+        +Name: string
+        +INN: string
+        +Address: string
+        +Phone: string
+        +Email: string
+    }
+
+    class Modem {
+        +ModemID: int
+        +IMEI: string
+        +Model: string
+        +Provider: string
+        +Status: string
+    }
+
+    class ServiceRequest {
+        +RequestID: int
+        +MachineID: int
+        +UserID: int?
+        +RequestType: string
+        +Status: string
+        +Priority: int
+        +CreatedAt: DateTime
+        +ScheduledDate: DateTime?
+        +Description: string
+    }
+
+    class StatusHistory {
+        +HistoryID: int
+        +EntityType: string
+        +EntityID: int
+        +OldStatus: string
+        +NewStatus: string
+        +ChangedAt: DateTime
+        +ChangedBy: int?
+    }
+
+    class News {
+        +NewsID: int
+        +Title: string
+        +Content: string
+        +PublishDate: DateTime
+        +CompanyID: int?
+    }
+
+    class Incassation {
+        +IncassationID: int
+        +MachineID: int
+        +Amount: decimal
+        +IncassationDate: DateTime
+        +DoneByUser: int?
+    }
+
+    class Protocol {
+        +ProtocolID: int
+        +RequestID: int?
+        +MachineID: int
+        +UserID: int?
+        +ProtocolType: string
+        +Content: string
+        +CreatedAt: DateTime
+        +PdfPath: string
+    }
+
+    class UserModel {
+        +UserModelID: int
+        +UserID: int
+        +ModelName: string
+    }
+}
+
+User "1" -- "0..*" UserModel : может обслуживать >
+User "1" -- "0..*" ServiceRequest : назначен >
+User "1" -- "0..*" Maintenance : выполнил >
+User "1" -- "0..*" Incassation : провел >
+User "1" -- "0..*" Protocol : создал >
+User "1" -- "0..*" StatusHistory : изменил >
+
+Machine "1" -- "0..*" Sale : имеет >
+Machine "1" -- "0..*" Maintenance : обслуживается >
+Machine "1" -- "0..*" ServiceRequest : имеет >
+Machine "1" -- "0..*" Incassation : инкассируется >
+Machine "1" -- "0..*" Protocol : имеет >
+Machine "0..*" -- "0..1" Company : принадлежит >
+Machine "0..*" -- "0..1" Modem : подключен >
+
+Product "1" -- "0..*" Sale : продается >
+
+ServiceRequest "1" -- "0..1" Protocol : имеет >
+
+News "0..*" -- "0..1" Company : для >
+
+@enduml

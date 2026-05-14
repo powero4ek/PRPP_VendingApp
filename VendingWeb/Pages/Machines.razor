@@ -1,0 +1,73 @@
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @page "/machines"
+@inject CsvImportService CsvService
+@inject VendingDbContext Db
+@using System.IO
+
+<h3>Торговые автоматы</h3>
+
+<div class="mb-3">
+    <InputFile OnChange="@LoadFiles" accept=".csv" class="form-control" />
+</div>
+
+@if (importResult != null)
+{
+    <div class="alert @(importResult.Errors.Any() ? "alert-warning" : "alert-success")">
+        <p>Всего строк: @importResult.Total, Импортировано: @importResult.Imported</p>
+        @if (importResult.Errors.Any())
+        {
+            <ul>
+                @foreach (var err in importResult.Errors)
+                {
+                    <li>@err</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Модель</th>
+            <th>Место</th>
+            <th>Статус</th>
+            <th>След. ТО</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var m in machines)
+        {
+            <tr>
+                <td>@m.MachineID</td>
+                <td>@m.Model</td>
+                <td>@m.Location</td>
+                <td>@m.MachineStatus</td>
+                <td>@(m.DateOfNextFixing?.ToString("dd.MM.yyyy") ?? "-")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Machine> machines = new();
+    private ImportResult? importResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        machines = await Db.Machines.Take(50).ToListAsync();
+    }
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (!file.Name.EndsWith(".csv"))
+        {
+            importResult = new ImportResult { Errors = new List<string> { "Неверный формат файла. Требуется .csv" } };
+            return;
+        }
+        using var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 10);
+        importResult = await CsvService.ImportMachinesAsync(stream);
+        machines = await Db.Machines.Take(50).ToListAsync();
+    }
+}

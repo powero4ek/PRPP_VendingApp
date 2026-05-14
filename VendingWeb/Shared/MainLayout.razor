@@ -1,0 +1,37 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Vending System</h1>
+        </div>
+        <NavMenu />
+    </div>
+    
+    <div class="main-content">
+        <div class="top-bar">
+            <h2>@GetPageTitle()</h2>
+            <div class="user-info">
+                <span>🔔</span>
+                <span>👤 Администратор</span>
+            </div>
+        </div>
+        
+        <div class="content-wrapper">
+            @Body
+        </div>
+    </div>
+</div>
+
+@code {
+    private string GetPageTitle() => Navigation.Uri switch
+    {
+        var u when u.Contains("/machines") => "Торговые автоматы",
+        var u when u.Contains("/requests") => "Заявки на обслуживание",
+        var u when u.Contains("/schedule") => "График ТО",
+        var u when u.Contains("/import") => "Импорт данных",
+        _ => "Панель управления"
+    };
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+}

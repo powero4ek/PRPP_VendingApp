@@ -1,0 +1,51 @@
+@page "/calendar"
+@inject ScheduleService ScheduleService
+@inject VendingDbContext Db
+
+<h3>Календарь обслуживания</h3>
+
+<div class="mb-3">
+    <label>Фильтр по ТА:</label>
+    <select @bind="selectedMachineId" class="form-select" style="width:300px">
+        <option value="">Все</option>
+        @foreach (var m in allMachines)
+        {
+            <option value="@m.MachineID">@m.Model - @m.Location</option>
+        }
+    </select>
+    <button class="btn btn-primary mt-2" @onclick="LoadEvents">Обновить</button>
+</div>
+
+<div class="row">
+    @foreach (var evt in events)
+    {
+        <div class="col-md-3 mb-3">
+            <div class="card" style="border-left: 5px solid @evt.Color">
+                <div class="card-body">
+                    <h6 class="card-title">@evt.Model</h6>
+                    <p class="card-text">@evt.Location</p>
+                    <p class="card-text"><small>@evt.CompanyName</small></p>
+                    <p class="card-text"><strong>@evt.Date.ToString("dd.MM.yyyy")</strong></p>
+                    <span class="badge" style="background-color:@evt.Color">@evt.Type</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<MaintenanceEvent> events = new();
+    private List<Machine> allMachines = new();
+    private int? selectedMachineId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allMachines = await Db.Machines.ToListAsync();
+        await LoadEvents();
+    }
+
+    private async Task LoadEvents()
+    {
+        events = await ScheduleService.GetMaintenanceCalendarAsync(selectedMachineId);
+    }
+}

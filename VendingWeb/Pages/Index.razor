@@ -1,0 +1,115 @@
+@page "/"
+@inject VendingDbContext Db
+
+<PageTitle>Главная — Vending System</PageTitle>
+
+<div class="page-title">Панель управления</div>
+<div class="page-subtitle">Обзор состояния торговых автоматов</div>
+
+<div class="card-grid">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-label">Всего ТА</div>
+                <div class="stat-value">@totalMachines</div>
+            </div>
+            <div class="stat-icon green">📦</div>
+        </div>
+        <div class="stat-change">↑ 12% за месяц</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-label">Работают</div>
+                <div class="stat-value" style="color: #48bb78;">@workingMachines</div>
+            </div>
+            <div class="stat-icon green">✅</div>
+        </div>
+        <div class="stat-change">@workingPercent% эффективность</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-label">Сломаны</div>
+                <div class="stat-value" style="color: #f56565;">@brokenMachines</div>
+            </div>
+            <div class="stat-icon red">❌</div>
+        </div>
+        <div class="stat-change">Требуют внимания</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-label">На обслуживании</div>
+                <div class="stat-value" style="color: #ecc94b;">@maintenanceMachines</div>
+            </div>
+            <div class="stat-icon yellow">🔧</div>
+        </div>
+        <div class="stat-change">В работе</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="data-card">
+            <div class="card-header">
+                <div class="card-title">Последние новости</div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <tbody>
+                        @foreach (var news in newsList.Take(5))
+                        {
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600;">@news.Title</div>
+                                    <div style="font-size: 13px; color: #718096; margin-top: 4px;">@news.Content</div>
+                                </td>
+                                <td style="white-space: nowrap; color: #a0aec0; font-size: 13px;">
+                                    @news.PublishDate.ToString("dd.MM.yyyy")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="data-card">
+            <div class="card-header">
+                <div class="card-title">Быстрые действия</div>
+            </div>
+            <div style="padding: 24px;">
+                <div style="display: grid; gap: 12px;">
+                    <a href="machines" class="btn btn-primary">🤖 Управление ТА</a>
+                    <a href="requests" class="btn btn-success">🔧 Заявки на обслуживание</a>
+                    <a href="schedule" class="btn" style="background: #edf2f7; color: #4a5568;">📅 График ТО</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalMachines;
+    private int workingMachines;
+    private int brokenMachines;
+    private int maintenanceMachines;
+    private double workingPercent;
+    private List<News> newsList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        totalMachines = await Db.Machines.CountAsync();
+        workingMachines = await Db.Machines.CountAsync(m => m.MachineStatus == "Работает");
+        brokenMachines = await Db.Machines.CountAsync(m => m.MachineStatus == "Вышел из строя");
+        maintenanceMachines = await Db.Machines.CountAsync(m => m.MachineStatus == "В ремонте/на обслуживании");
+        workingPercent = totalMachines > 0 ? Math.Round((double)workingMachines / totalMachines * 100) : 0;
+        newsList = await Db.News.OrderByDescending(n => n.PublishDate).ToListAsync();
+    }
+}
